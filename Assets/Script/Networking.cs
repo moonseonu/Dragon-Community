@@ -3,31 +3,37 @@ using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
 
-public class Client : MonoBehaviour
+public class NetWorking : MonoBehaviour
 {
     private const string SERVER_IP = "127.0.0.1"; // 서버 IP 주소
     private const int SERVER_PORT = 9000;         // 서버 포트 번호
 
     private TcpClient client;
     private NetworkStream stream;
+
+    private bool islogin = false;
     public class Packet
     {
-        public string playerName = "moon";
-        public int playerID = 1234;
+        public string ID;
+        public string PW;
+        //public int p = 1;
 
         // Serialize 함수: 패킷을 바이트 배열로 직렬화하는 메서드
         public byte[] Serialize()
         {
-            byte[] playerNameBytes = Encoding.UTF8.GetBytes(playerName);
-            byte[] playerIDBytes = BitConverter.GetBytes(playerID);
+            byte[] IDBytes = Encoding.UTF8.GetBytes(ID);
+            byte[] PWBytes = Encoding.UTF8.GetBytes(PW);
+            byte[] IDLengthBytes = BitConverter.GetBytes(IDBytes.Length);
+            byte[] PWLengthBytes = BitConverter.GetBytes(PWBytes.Length);
 
-            // int 변수의 크기를 직접 지정합니다.
             int intSize = sizeof(int);
 
-            byte[] data = new byte[32 + intSize]; // intSize로 수정합니다.
-            Buffer.BlockCopy(playerNameBytes, 0, data, 0, playerNameBytes.Length);
-            Buffer.BlockCopy(playerIDBytes, 0, data, 32, intSize); // intSize로 수정합니다.
+            byte[] data = new byte[IDBytes.Length + PWBytes.Length + (2 * intSize)];
 
+            Buffer.BlockCopy(IDLengthBytes, 0, data, 0, intSize);
+            Buffer.BlockCopy(IDBytes, 0, data, intSize, IDBytes.Length);
+            Buffer.BlockCopy(PWLengthBytes, 0, data, intSize + IDBytes.Length, intSize);
+            Buffer.BlockCopy(PWBytes, 0, data, 2 * intSize + IDBytes.Length, PWBytes.Length);
             return data;
         }
     }
@@ -41,9 +47,9 @@ public class Client : MonoBehaviour
 
     void Update()
     {
-        if (GameManager.instance.isMatching)
+        if (islogin)
         {
-            GameManager.instance.isMatching = false;
+            islogin = false;
             SendPacket(packet);
         }
     }
@@ -84,5 +90,12 @@ public class Client : MonoBehaviour
             client.Close();
             Debug.Log("Disconnected from server");
         }
+    }
+
+    public void IsLogin(string ID, string PW)
+    {
+        packet.ID = ID;
+        packet.PW = PW;
+        islogin = true;
     }
 }
