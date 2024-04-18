@@ -167,17 +167,16 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 		if (ptr->recvbytes == 0) {
 			ptr->recvbytes = cbTransferred;
 			ptr->sendbytes = 0;
+			ptr->buf[ptr->recvbytes] = '\0';
 
-			// 받은 데이터 출력
-			//ptr->buf[cbTransferred] = '\0';
 
 			Packet recvPack;
 			int offset = 0;
 
+			printf("%d", ptr->buf);
 
 			memcpy(&recvPack.IDSize, ptr->buf + offset, sizeof(int));
 			offset += sizeof(int);
-			//printf("%d", recvPack.IDSize);
 			recvPack.ID = new char[recvPack.IDSize + 1];
 
 			memcpy(recvPack.ID, ptr->buf + offset, recvPack.IDSize);
