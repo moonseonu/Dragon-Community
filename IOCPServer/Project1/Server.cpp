@@ -11,10 +11,8 @@ using namespace std;
 
 #pragma pack(push, 1)
 struct Packet {
-	char *ID;
-	char *PW;
 	int IDSize;
-	int PWSize;
+	char *ID;
 };
 #pragma pack(pop)
 
@@ -42,7 +40,43 @@ void err_display(char* msg);
 
 int main(int argc, char* argv[])
 {
-	MYSQL* conn;
+	/*MYSQL* conn;
+	MYSQL_RES* res;
+	MYSQL_ROW row;
+
+	char* server = "localhost";
+	char* user = "root";
+	char* password = "12341234";
+	char* database = "dc";
+
+	conn = mysql_init(NULL);
+
+	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0))
+	{
+		exit(1);
+	}
+	if (mysql_query(conn, "show tables"))
+	{
+		exit(1);
+	}
+
+	res = mysql_use_result(conn);
+	printf("MYSQL Tables in mysql database : \n");
+	while ((row = mysql_fetch_row(res)) != NULL)
+		printf("%s \n", row[0]);
+
+
+	if (mysql_query(conn, "SELECT * FROM R_TEST"))
+	{
+		return 1;
+	}
+
+	res = mysql_use_result(conn);
+
+	printf("Returning List of Names : \n");
+	while ((row = mysql_fetch_row(res)) != NULL)
+		printf("%s %s %s \n", row[0], row[1], row[2]);*/
+
 
 	int retval;
 
@@ -123,7 +157,8 @@ int main(int argc, char* argv[])
 			continue;
 		}
 	}
-
+	//mysql_free_result(res);
+	//mysql_close(conn);
 	// 윈속 종료
 	WSACleanup();
 	return 0;
@@ -171,9 +206,8 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 
 
 			Packet recvPack;
-			int offset = 0;
 
-			printf("%d", ptr->buf);
+			int offset = 0;
 
 			memcpy(&recvPack.IDSize, ptr->buf + offset, sizeof(int));
 			offset += sizeof(int);
@@ -183,21 +217,11 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			recvPack.ID[recvPack.IDSize] = '\0';
 			offset += recvPack.IDSize;
 
-			memcpy(&recvPack.PWSize, ptr->buf + offset, sizeof(int));
-			offset += sizeof(int);
-
-			recvPack.PW = new char[recvPack.PWSize + 1];
-
-			memcpy(recvPack.PW, ptr->buf + offset, recvPack.PWSize);
-			recvPack.PW[recvPack.PWSize] = '\0';
-			offset += recvPack.PWSize;
-
-			printf("[TCP/%s:%d] %s\n", inet_ntoa(clientaddr.sin_addr),
-				ntohs(clientaddr.sin_port), ptr->buf);
+			printf("%d\n", recvPack.IDSize);
+			printf("%s\n", recvPack.ID);
 
 
 			delete[] recvPack.ID;
-			delete[] recvPack.PW;
 		}
 		else {
 			ptr->sendbytes += cbTransferred;
@@ -269,55 +293,3 @@ void err_display(char* msg)
 	printf("[%s] %s", msg, (char*)lpMsgBuf);
 	LocalFree(lpMsgBuf);
 }
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <mysql.h>
-//
-//
-//int main()
-//{
-//
-//	MYSQL* conn;
-//	MYSQL_RES* res;
-//	MYSQL_ROW row;
-//
-//	char* server = "localhost";
-//	char* user = "root";
-//	char* password = "12341234";
-//	char* database = "dc";
-//
-//	conn = mysql_init(NULL);
-//
-//	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0))
-//	{
-//		exit(1);
-//	}
-//	if (mysql_query(conn, "show tables"))
-//	{
-//		exit(1);
-//	}
-//
-//	res = mysql_use_result(conn);
-//	printf("MYSQL Tables in mysql database : \n");
-//	while ((row = mysql_fetch_row(res)) != NULL)
-//		printf("%s \n", row[0]);
-//
-//
-//	if (mysql_query(conn, "SELECT * FROM R_TEST"))
-//	{
-//		return 1;
-//	}
-//
-//	res = mysql_use_result(conn);
-//
-//	printf("Returning List of Names : \n");
-//	while ((row = mysql_fetch_row(res)) != NULL)
-//		printf("%s %s %s \n", row[0], row[1], row[2]);
-//
-//
-//	mysql_free_result(res);
-//	mysql_close(conn);
-//	return 0;
-//}
-//
-//

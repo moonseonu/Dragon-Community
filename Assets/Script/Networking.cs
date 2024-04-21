@@ -15,25 +15,25 @@ public class NetWorking : MonoBehaviour
     public class Packet
     {
         public string ID;
-        public string PW;
+        //public string PW;
         //public int p = 1;
 
         // Serialize 함수: 패킷을 바이트 배열로 직렬화하는 메서드
         public byte[] Serialize()
         {
             byte[] IDBytes = Encoding.UTF8.GetBytes(ID);
-            byte[] PWBytes = Encoding.UTF8.GetBytes(PW);
+            //byte[] PWBytes = Encoding.UTF8.GetBytes(PW);
             byte[] IDLengthBytes = BitConverter.GetBytes(IDBytes.Length);
-            byte[] PWLengthBytes = BitConverter.GetBytes(PWBytes.Length);
+            //byte[] PWLengthBytes = BitConverter.GetBytes(PWBytes.Length);
 
             int intSize = sizeof(int);
 
-            byte[] data = new byte[IDBytes.Length + PWBytes.Length + (2 * intSize)];
+            byte[] data = new byte[IDBytes.Length + (2 * intSize)];
 
             Buffer.BlockCopy(IDLengthBytes, 0, data, 0, intSize);
             Buffer.BlockCopy(IDBytes, 0, data, intSize, IDBytes.Length);
-            Buffer.BlockCopy(PWLengthBytes, 0, data, intSize + IDBytes.Length, intSize);
-            Buffer.BlockCopy(PWBytes, 0, data, 2 * intSize + IDBytes.Length, PWBytes.Length);
+            //Buffer.BlockCopy(PWLengthBytes, 0, data, intSize + IDBytes.Length, intSize);
+            //Buffer.BlockCopy(PWBytes, 0, data, 2 * intSize + IDBytes.Length, PWBytes.Length);
             return data;
         }
     }
@@ -95,7 +95,7 @@ public class NetWorking : MonoBehaviour
     public void IsLogin(string ID, string PW)
     {
         packet.ID = ID;
-        packet.PW = PW;
+        //packet.PW = PW;
         islogin = true;
     }
 }
