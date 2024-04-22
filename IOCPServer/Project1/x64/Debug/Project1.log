@@ -1,2 +1,3 @@
 ﻿  Server.cpp
+D:\개발\Dragon-Community\IOCPServer\Project1\Server.cpp(177,12): warning C4101: 'row' :참조되지 않은 지역 변수입니다.
   Project1.vcxproj -> D:\개발\Dragon-Community\IOCPServer\x64\Debug\Project1.exe

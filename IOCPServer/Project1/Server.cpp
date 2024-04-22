@@ -13,6 +13,9 @@ using namespace std;
 struct Packet {
 	int IDSize;
 	char *ID;
+
+	int PWSize;
+	char* PW;
 };
 #pragma pack(pop)
 
@@ -40,7 +43,7 @@ void err_display(char* msg);
 
 int main(int argc, char* argv[])
 {
-	/*MYSQL* conn;
+	MYSQL* conn;
 	MYSQL_RES* res;
 	MYSQL_ROW row;
 
@@ -66,7 +69,7 @@ int main(int argc, char* argv[])
 		printf("%s \n", row[0]);
 
 
-	if (mysql_query(conn, "SELECT * FROM R_TEST"))
+	if (mysql_query(conn, "SELECT * FROM login"))
 	{
 		return 1;
 	}
@@ -75,7 +78,7 @@ int main(int argc, char* argv[])
 
 	printf("Returning List of Names : \n");
 	while ((row = mysql_fetch_row(res)) != NULL)
-		printf("%s %s %s \n", row[0], row[1], row[2]);*/
+		printf("%s %s %d \n", row[0], row[1], atoi(row[2]));
 
 
 	int retval;
@@ -157,8 +160,8 @@ int main(int argc, char* argv[])
 			continue;
 		}
 	}
-	//mysql_free_result(res);
-	//mysql_close(conn);
+	mysql_free_result(res);
+	mysql_close(conn);
 	// 윈속 종료
 	WSACleanup();
 	return 0;
@@ -169,6 +172,14 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 {
 	int retval;
 	HANDLE hcp = (HANDLE)arg;
+	MYSQL* conn;
+	MYSQL_RES* res;
+	MYSQL_ROW row;
+
+	char* server = "localhost";
+	char* user = "root";
+	char* password = "12341234";
+	char* database = "dc";
 
 	while (1) {
 		// 비동기 입출력 완료 기다리기
@@ -217,11 +228,17 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			recvPack.ID[recvPack.IDSize] = '\0';
 			offset += recvPack.IDSize;
 
-			printf("%d\n", recvPack.IDSize);
-			printf("%s\n", recvPack.ID);
+			memcpy(&recvPack.PWSize, ptr->buf + offset, sizeof(int));
+			offset += sizeof(int);
+			recvPack.PW = new char[recvPack.PWSize + 1];
 
+			memcpy(recvPack.PW, ptr->buf + offset, recvPack.PWSize);
+			recvPack.PW[recvPack.PWSize] = '\0';
+			offset += recvPack.PWSize;
 
+			
 			delete[] recvPack.ID;
+			delete[] recvPack.PW;
 		}
 		else {
 			ptr->sendbytes += cbTransferred;
@@ -263,7 +280,8 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			}
 		}
 	}
-
+	mysql_free_result(res);
+	mysql_close(conn);
 	return 0;
 }
 
