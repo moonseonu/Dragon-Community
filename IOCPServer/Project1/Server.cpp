@@ -181,6 +181,13 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 	char* password = "12341234";
 	char* database = "dc";
 
+	conn = mysql_init(NULL);
+
+	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0))
+	{
+		exit(1);
+	}
+
 	while (1) {
 		// 비동기 입출력 완료 기다리기
 		DWORD cbTransferred;
@@ -236,7 +243,45 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			recvPack.PW[recvPack.PWSize] = '\0';
 			offset += recvPack.PWSize;
 
-			
+			if (mysql_query(conn, "SELECT * FROM login"))
+			{
+				return 1;
+			}
+			res = mysql_use_result(conn);
+			while ((row = mysql_fetch_row(res)) != NULL)
+			{
+				printf("%s \n",row[1]);
+				if (strcmp(row[1], recvPack.ID) == 0) {
+					char msg[] = "login success";
+					WSABUF buf;
+					buf.buf = msg;
+					buf.len = strlen(msg);
+					// 클라이언트로 메시지를 전송
+					retval = WSASend(ptr->sock, &buf, 1, NULL, 0, &ptr->overlapped, NULL);
+					if (retval == SOCKET_ERROR) {
+						if (WSAGetLastError() != WSA_IO_PENDING) {
+							err_display("WSASend()");
+						}
+					}
+					break;
+				}
+
+				else {
+					char msg[] = "login fail";
+					WSABUF buf;
+					buf.buf = msg;
+					buf.len = strlen(msg);
+					// 클라이언트로 메시지를 전송
+					retval = WSASend(ptr->sock, &buf, 1, NULL, 0, &ptr->overlapped, NULL);
+					if (retval == SOCKET_ERROR) {
+						if (WSAGetLastError() != WSA_IO_PENDING) {
+							err_display("WSASend()");
+						}
+					}
+					break;
+				}
+			}
+
 			delete[] recvPack.ID;
 			delete[] recvPack.PW;
 		}
