@@ -12,7 +12,7 @@ using namespace std;
 #pragma pack(push, 1)
 struct Packet {
 	int IDSize;
-	char *ID;
+	char* ID;
 
 	int PWSize;
 	char* PW;
@@ -180,6 +180,7 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 	char* user = "root";
 	char* password = "12341234";
 	char* database = "dc";
+	bool islogin = false;
 
 	conn = mysql_init(NULL);
 
@@ -222,7 +223,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			ptr->sendbytes = 0;
 			ptr->buf[ptr->recvbytes] = '\0';
 
-
 			Packet recvPack;
 
 			int offset = 0;
@@ -250,35 +250,9 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			res = mysql_use_result(conn);
 			while ((row = mysql_fetch_row(res)) != NULL)
 			{
-				printf("%s \n",row[1]);
+				printf("%s \n", row[1]);
 				if (strcmp(row[1], recvPack.ID) == 0) {
-					char msg[] = "login success";
-					WSABUF buf;
-					buf.buf = msg;
-					buf.len = strlen(msg);
-					// 클라이언트로 메시지를 전송
-					retval = WSASend(ptr->sock, &buf, 1, NULL, 0, &ptr->overlapped, NULL);
-					if (retval == SOCKET_ERROR) {
-						if (WSAGetLastError() != WSA_IO_PENDING) {
-							err_display("WSASend()");
-						}
-					}
-					break;
-				}
-
-				else {
-					char msg[] = "login fail";
-					WSABUF buf;
-					buf.buf = msg;
-					buf.len = strlen(msg);
-					// 클라이언트로 메시지를 전송
-					retval = WSASend(ptr->sock, &buf, 1, NULL, 0, &ptr->overlapped, NULL);
-					if (retval == SOCKET_ERROR) {
-						if (WSAGetLastError() != WSA_IO_PENDING) {
-							err_display("WSASend()");
-						}
-					}
-					break;
+					islogin = true;
 				}
 			}
 
@@ -291,6 +265,14 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 
 		if (ptr->recvbytes > ptr->sendbytes) {
 			// 데이터 보내기
+			if (islogin) {
+				char msg[] = "login success";
+				int msgbytes = strlen(msg);
+				msg[msgbytes] = '\0';
+				memcpy(ptr->buf, &msg, msgbytes);
+				ptr->sendbytes = msgbytes;
+				printf("%s", ptr->buf);
+			}
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
 			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
