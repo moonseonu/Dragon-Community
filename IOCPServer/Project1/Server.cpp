@@ -250,9 +250,9 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			res = mysql_use_result(conn);
 			while ((row = mysql_fetch_row(res)) != NULL)
 			{
-				printf("%s \n", row[1]);
 				if (strcmp(row[1], recvPack.ID) == 0) {
 					islogin = true;
+					printf("%s \n", recvPack.ID);
 				}
 			}
 
@@ -266,26 +266,35 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 		if (ptr->recvbytes > ptr->sendbytes) {
 			// 데이터 보내기
 			if (islogin) {
-				char msg[] = "login success";
-				int msgbytes = strlen(msg);
-				msg[msgbytes] = '\0';
-				memcpy(ptr->buf, &msg, msgbytes);
-				ptr->sendbytes = msgbytes;
-				printf("%s", ptr->buf);
-			}
-			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
-			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
-			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
+				memcpy(ptr->buf, &islogin, sizeof(bool));
+				ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
+				ptr->wsabuf.buf = ptr->buf; // ptr->buf의 시작 주소를 가리킴
+				ptr->wsabuf.len = ptr->recvbytes; // 보낼 데이터의 크기를 설정
 
-			DWORD sendbytes;
-			retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
-				&sendbytes, 0, &ptr->overlapped, NULL);
-			if (retval == SOCKET_ERROR) {
-				if (WSAGetLastError() != WSA_IO_PENDING) {
-					err_display("WSASend()");
+				DWORD sendbytes;
+				retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
+					&sendbytes, 0, &ptr->overlapped, NULL);
+				if (retval == SOCKET_ERROR) {
+					if (WSAGetLastError() != WSA_IO_PENDING) {
+						err_display("WSASend()");
+					}
+					continue;
 				}
-				continue;
+				islogin = false;
 			}
+			//ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
+			//ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
+			//ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
+
+			//DWORD sendbytes;
+			//retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
+			//	&sendbytes, 0, &ptr->overlapped, NULL);
+			//if (retval == SOCKET_ERROR) {
+			//	if (WSAGetLastError() != WSA_IO_PENDING) {
+			//		err_display("WSASend()");
+			//	}
+			//	continue;
+			//}
 		}
 		else {
 			ptr->recvbytes = 0;

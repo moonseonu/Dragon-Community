@@ -87,16 +87,14 @@ public class NetWorking : MonoBehaviour
 
     void RecvMessage()
     {
-        byte[] buffer = new byte[100]; // 적절한 크기로 수정하세요
-        int bytesRead;
-
-
         try
         {
-            bytesRead = stream.Read(buffer, 0, buffer.Length);
-            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Debug.Log("Received message: " + message);
-            isSend = false;
+            byte[] data = new byte[1];
+            stream.Read(data, 0, data.Length);
+            Debug.Log(data[0]);
+            bool recv = BitConverter.ToBoolean(data, 0);
+            Debug.Log(recv);
+
         }
         catch (Exception ex)
         {
