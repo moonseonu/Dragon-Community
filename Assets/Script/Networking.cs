@@ -94,7 +94,6 @@ public class NetWorking : MonoBehaviour
             Debug.Log(data[0]);
             bool recv = BitConverter.ToBoolean(data, 0);
             Debug.Log(recv);
-
         }
         catch (Exception ex)
         {

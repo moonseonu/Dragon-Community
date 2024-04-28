@@ -267,34 +267,20 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			// 데이터 보내기
 			if (islogin) {
 				memcpy(ptr->buf, &islogin, sizeof(bool));
-				ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
-				ptr->wsabuf.buf = ptr->buf; // ptr->buf의 시작 주소를 가리킴
-				ptr->wsabuf.len = ptr->recvbytes; // 보낼 데이터의 크기를 설정
-
-				DWORD sendbytes;
-				retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
-					&sendbytes, 0, &ptr->overlapped, NULL);
-				if (retval == SOCKET_ERROR) {
-					if (WSAGetLastError() != WSA_IO_PENDING) {
-						err_display("WSASend()");
-					}
-					continue;
-				}
-				islogin = false;
 			}
-			//ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
-			//ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
-			//ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
+			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
+			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
+			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
 
-			//DWORD sendbytes;
-			//retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
-			//	&sendbytes, 0, &ptr->overlapped, NULL);
-			//if (retval == SOCKET_ERROR) {
-			//	if (WSAGetLastError() != WSA_IO_PENDING) {
-			//		err_display("WSASend()");
-			//	}
-			//	continue;
-			//}
+			DWORD sendbytes;
+			retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
+				&sendbytes, 0, &ptr->overlapped, NULL);
+			if (retval == SOCKET_ERROR) {
+				if (WSAGetLastError() != WSA_IO_PENDING) {
+					err_display("WSASend()");
+				}
+				continue;
+			}
 		}
 		else {
 			ptr->recvbytes = 0;
