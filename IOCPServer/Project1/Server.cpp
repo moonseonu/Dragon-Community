@@ -16,6 +16,10 @@ struct Packet {
 
 	int PWSize;
 	char* PW;
+
+	int IPSize;
+	char* IP;
+	int Port;
 };
 #pragma pack(pop)
 
@@ -182,6 +186,8 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 	char* database = "dc";
 	bool islogin = false;
 
+	int x = 0;
+
 	conn = mysql_init(NULL);
 
 	if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0))
@@ -243,6 +249,19 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			recvPack.PW[recvPack.PWSize] = '\0';
 			offset += recvPack.PWSize;
 
+			memcpy(&recvPack.IPSize, ptr->buf + offset, sizeof(int));
+			offset += sizeof(int);
+			recvPack.IP = new char[recvPack.IPSize + 1];
+
+			memcpy(recvPack.IP, ptr->buf + offset, recvPack.IPSize);
+			recvPack.IP[recvPack.IPSize] = '\0';
+			offset += recvPack.IPSize;
+
+			memcpy(&recvPack.Port, ptr->buf + offset, sizeof(int));
+			offset += sizeof(int);
+
+			memset(ptr->buf, 0, sizeof(ptr->buf));
+
 			if (mysql_query(conn, "SELECT * FROM login"))
 			{
 				return 1;
@@ -251,11 +270,19 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			while ((row = mysql_fetch_row(res)) != NULL)
 			{
 				if (strcmp(row[1], recvPack.ID) == 0) {
-					islogin = true;
-					printf("%s \n", recvPack.ID);
+					int islogin = 1;
+					bool login = true;
+					memcpy(ptr->buf, &login, sizeof(bool));
+					printf("%d\n", *ptr->buf);
+				}
+
+				else {
+					int islogin = 0;
+					bool login = false;
+					memcpy(ptr->buf, &login, sizeof(bool));
+					printf("%d\n", *ptr->buf);
 				}
 			}
-
 			delete[] recvPack.ID;
 			delete[] recvPack.PW;
 		}
@@ -265,9 +292,7 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 
 		if (ptr->recvbytes > ptr->sendbytes) {
 			// 데이터 보내기
-			if (islogin) {
-				memcpy(ptr->buf, &islogin, sizeof(bool));
-			}
+			printf("%d\n", *ptr->buf);
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
 			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
@@ -281,6 +306,7 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 				}
 				continue;
 			}
+			printf("%d\n", *ptr->wsabuf.buf);
 		}
 		else {
 			ptr->recvbytes = 0;
@@ -289,7 +315,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsabuf.buf = ptr->buf;
 			ptr->wsabuf.len = BUFSIZE;
-
 			DWORD recvbytes;
 			DWORD flags = 0;
 			retval = WSARecv(ptr->sock, &ptr->wsabuf, 1,
