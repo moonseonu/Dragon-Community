@@ -8,6 +8,8 @@ using namespace std;
 #include <vector>
 #include <mysql.h>
 #include <string>
+#include <iostream>
+#include <conio.h>
 
 #pragma pack(push, 1)
 struct Packet {
@@ -230,7 +232,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			ptr->buf[ptr->recvbytes] = '\0';
 
 			Packet recvPack;
-
 			int offset = 0;
 
 			memcpy(&recvPack.IDSize, ptr->buf + offset, sizeof(int));
@@ -273,14 +274,12 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 					int islogin = 1;
 					bool login = true;
 					memcpy(ptr->buf, &login, sizeof(bool));
-					printf("%d\n", *ptr->buf);
 				}
 
 				else {
 					int islogin = 0;
 					bool login = false;
 					memcpy(ptr->buf, &login, sizeof(bool));
-					printf("%d\n", *ptr->buf);
 				}
 			}
 			delete[] recvPack.ID;
@@ -292,11 +291,9 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 
 		if (ptr->recvbytes > ptr->sendbytes) {
 			// 데이터 보내기
-			printf("%d\n", *ptr->buf);
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
 			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
-
 			DWORD sendbytes;
 			retval = WSASend(ptr->sock, &ptr->wsabuf, 1,
 				&sendbytes, 0, &ptr->overlapped, NULL);
@@ -306,11 +303,9 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 				}
 				continue;
 			}
-			printf("%d\n", *ptr->wsabuf.buf);
 		}
 		else {
 			ptr->recvbytes = 0;
-
 			// 데이터 받기
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsabuf.buf = ptr->buf;

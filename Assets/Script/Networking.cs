@@ -17,7 +17,7 @@ public class NetWorking : MonoBehaviour
 
     private string clientIp;
     private int clientPort;
-
+    bool islog;
     public class Packet
     {
         public string ID;
@@ -92,13 +92,22 @@ public class NetWorking : MonoBehaviour
     {
         try
         {
+            client = new TcpClient(SERVER_IP, SERVER_PORT);
+            stream = client.GetStream();
+            Debug.Log("Connected to server");
+
+            clientIp = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Address.ToString();
+            clientPort = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Port;
+
             packet.IP = clientIp;
             packet.Port = clientPort;
             byte[] data = packet.Serialize();
+            Debug.Log("f1143431");
             stream.Write(data, 0, data.Length);
-
+            Debug.Log("f11189978978789");
             Debug.Log("Packet sent to server");
             RecvMessage();
+
         }
         catch (Exception e)
         {
@@ -111,10 +120,15 @@ public class NetWorking : MonoBehaviour
         try
         {
             byte[] data = new byte[sizeof(bool)];
-            stream.Read(data, 0, data.Length);
-            Debug.Log(data[0]);
-            bool recv = BitConverter.ToBoolean(data, 0);
-            Debug.Log(recv);
+            Debug.Log("fdafd");
+            int dataLength = stream.Read(data, 0, data.Length);
+            Debug.Log("f11111");
+            if (dataLength == sizeof(bool))
+            {
+                islog = BitConverter.ToBoolean(data, 0);
+                Debug.Log(islog);
+            }
+
         }
         catch (Exception ex)
         {
@@ -136,6 +150,7 @@ public class NetWorking : MonoBehaviour
     {
         packet.ID = ID;
         packet.PW = PW;
-        islogin = true;
+        SendPacket(packet);
+        
     }
 }
