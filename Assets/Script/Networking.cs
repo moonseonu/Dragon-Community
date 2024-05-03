@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using UnityEditor.PackageManager;
+using UnityEditor.Sprites;
 using UnityEngine;
 
 public class NetWorking : MonoBehaviour
@@ -27,7 +28,7 @@ public class NetWorking : MonoBehaviour
         public int p = 1;
 
         // Serialize 함수: 패킷을 바이트 배열로 직렬화하는 메서드
-        public byte[] Serialize()
+        public byte[] Packing()
         {
             byte[] IDBytes = Encoding.UTF8.GetBytes(ID);
             byte[] PWBytes = Encoding.UTF8.GetBytes(PW);
@@ -55,11 +56,6 @@ public class NetWorking : MonoBehaviour
         }
     }
     LoginPacket login = new LoginPacket();
-
-    public class MatchingPacket
-    {
-
-    }
     
 
     void Start()
@@ -102,7 +98,7 @@ public class NetWorking : MonoBehaviour
 
             packet.IP = clientIp;
             packet.Port = clientPort;
-            byte[] data = packet.Serialize();
+            byte[] data = packet.Packing();
             stream.Write(data, 0, data.Length);
             Debug.Log(data[0]);
             Debug.Log("Packet sent to server");
@@ -127,9 +123,9 @@ public class NetWorking : MonoBehaviour
             {
                 islogin = BitConverter.ToBoolean(data, 0);
                 Debug.Log(islogin);
-                if (!islogin)
+                if (islogin)
                 {
-                    
+                    GameManager.instance.isLogin = true;
                 }
             }
 
@@ -139,6 +135,31 @@ public class NetWorking : MonoBehaviour
             Debug.LogError("Exception: " + ex.Message);
         }
 
+    }
+
+    void SendMatchingSignal()
+    {
+        try
+        {
+            client = new TcpClient(SERVER_IP, SERVER_PORT);
+            stream = client.GetStream();
+            Debug.Log("Connected to server");
+
+            clientIp = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Address.ToString();
+            clientPort = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Port;
+
+            //byte[] data = GameManager.instance.isMatching;
+            stream.Write(data, 0, data.Length);
+            Debug.Log(data[0]);
+            Debug.Log("Packet sent to server");
+            RecvMessage();
+            client.Close();
+
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to send packet to server: {e.Message}");
+        }
     }
 
     void OnDestroy()
@@ -155,5 +176,10 @@ public class NetWorking : MonoBehaviour
         login.ID = ID;
         login.PW = PW;
         SendPacket(login);   
+    }
+
+    public void isMatching()
+    {
+
     }
 }

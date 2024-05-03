@@ -17,20 +17,26 @@ public class UIManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void ButtonEvent(string name)
     {
         switch (name)
         {
-            case "start":
+            case "match":
                 GameManager.instance.isMatching = true;
-                Debug.Log("start");
+                Debug.Log("matching");
                 break;
             case "login":
                 GameManager.instance.IsLoginData(ID.text, PW.text);
                 break;
         }
+    }
+
+    public void Matching_AddListener(GameObject button)
+    {
+        Button MatchButton = button.GetComponent<Button>();
+        MatchButton.onClick.AddListener(() => ButtonEvent("match"));
     }
 }
