@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using UnityEditor.PackageManager;
@@ -11,14 +12,13 @@ public class NetWorking : MonoBehaviour
 
     private TcpClient client;
     private NetworkStream stream;
-
-    private bool islogin = false;
     private bool isSend = false;
 
     private string clientIp;
     private int clientPort;
-    bool islog;
-    public class Packet
+    private bool islogin;
+    public bool Islogin { get { return islogin; } }
+    public class LoginPacket
     {
         public string ID;
         public string PW;
@@ -54,7 +54,12 @@ public class NetWorking : MonoBehaviour
             return data;
         }
     }
-    Packet packet = new Packet();
+    LoginPacket login = new LoginPacket();
+
+    public class MatchingPacket
+    {
+
+    }
     
 
     void Start()
@@ -64,11 +69,7 @@ public class NetWorking : MonoBehaviour
 
     void Update()
     {
-        if (islogin)
-        {
-            islogin = false;
-            SendPacket(packet);
-        }
+
     }
 
     void ConnectToServer()
@@ -88,7 +89,7 @@ public class NetWorking : MonoBehaviour
         }
     }
 
-    void SendPacket(Packet packet)
+    void SendPacket(LoginPacket packet)
     {
         try
         {
@@ -102,11 +103,11 @@ public class NetWorking : MonoBehaviour
             packet.IP = clientIp;
             packet.Port = clientPort;
             byte[] data = packet.Serialize();
-            Debug.Log("f1143431");
             stream.Write(data, 0, data.Length);
-            Debug.Log("f11189978978789");
+            Debug.Log(data[0]);
             Debug.Log("Packet sent to server");
             RecvMessage();
+            client.Close();
 
         }
         catch (Exception e)
@@ -120,13 +121,16 @@ public class NetWorking : MonoBehaviour
         try
         {
             byte[] data = new byte[sizeof(bool)];
-            Debug.Log("fdafd");
             int dataLength = stream.Read(data, 0, data.Length);
-            Debug.Log("f11111");
+            Debug.Log(stream);
             if (dataLength == sizeof(bool))
             {
-                islog = BitConverter.ToBoolean(data, 0);
-                Debug.Log(islog);
+                islogin = BitConverter.ToBoolean(data, 0);
+                Debug.Log(islogin);
+                if (!islogin)
+                {
+                    
+                }
             }
 
         }
@@ -148,9 +152,8 @@ public class NetWorking : MonoBehaviour
 
     public void IsLogin(string ID, string PW)
     {
-        packet.ID = ID;
-        packet.PW = PW;
-        SendPacket(packet);
-        
+        login.ID = ID;
+        login.PW = PW;
+        SendPacket(login);   
     }
 }

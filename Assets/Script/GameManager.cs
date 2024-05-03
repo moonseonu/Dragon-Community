@@ -1,15 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.SearchService;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
     // Start is called before the first frame update
     public static GameManager instance;
     private NetWorking networking;
+
     private enum GameState
     {
-        login, main, start
+        login, main, playtable
     }
     private GameState state;
     public bool isLogin = false;
@@ -39,10 +42,16 @@ public class GameManager : MonoBehaviour
         switch (state)
         {
             case GameState.login:
+                if (networking.Islogin)
+                {
+                    SceneManager.LoadScene(1);
+                    state = GameState.main; 
+                    break;
+                }
                 break;
             case GameState.main:
                 break;
-            case GameState.start:
+            case GameState.playtable:
                 break;
         }
     }
