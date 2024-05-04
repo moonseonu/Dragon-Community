@@ -84,8 +84,14 @@ int main(int argc, char* argv[])
 
 	printf("Returning List of Names : \n");
 	while ((row = mysql_fetch_row(res)) != NULL)
-		printf("%s %s %d \n", row[0], row[1], atoi(row[2]));
+	{
+		printf("%s %s %s %s\n", row[0], row[1], row[2], row[3]);
+		if (row[3] != NULL && strcmp(row[3], "0") == 0) {
+			printf("Fdsa");
+		}
 
+		printf("\n");
+	}
 
 	int retval;
 
@@ -268,20 +274,37 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 				return 1;
 			}
 			res = mysql_use_result(conn);
+			bool login = false;
 			while ((row = mysql_fetch_row(res)) != NULL)
 			{
-				if (strcmp(row[1], recvPack.ID) == 0) {
-					int islogin = 1;
-					bool login = true;
+				if ((strcmp(row[1], recvPack.ID) == 0) && (strcmp(row[2], recvPack.PW) == 0)) {
+					login = true;
 					memcpy(ptr->buf, &login, sizeof(bool));
+					if (strcmp(row[3], "0") == 0) {
+						mysql_free_result(res);
+						char update_query[1000];
+						sprintf(update_query, "update login set Online = true where ID = '%s'", recvPack.ID);
+						if (mysql_query(conn, update_query)) {
+							printf("MySQL query failed: %s\n", mysql_error(conn));
+							return 1;
+						}
+						printf("fdfadfs");
+					}
+
+					else {
+						printf("ismatching\n\n\n");
+					}
+
+					break;
 				}
 
 				else {
-					int islogin = 0;
-					bool login = false;
+					login = false;
 					memcpy(ptr->buf, &login, sizeof(bool));
 				}
 			}
+			mysql_free_result(res);
+			printf("fdafd");
 			delete[] recvPack.ID;
 			delete[] recvPack.PW;
 		}

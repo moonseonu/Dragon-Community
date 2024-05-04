@@ -100,7 +100,6 @@ public class NetWorking : MonoBehaviour
             packet.Port = clientPort;
             byte[] data = packet.Packing();
             stream.Write(data, 0, data.Length);
-            Debug.Log(data[0]);
             Debug.Log("Packet sent to server");
             RecvMessage();
             client.Close();
@@ -137,31 +136,6 @@ public class NetWorking : MonoBehaviour
 
     }
 
-    void SendMatchingSignal()
-    {
-        try
-        {
-            client = new TcpClient(SERVER_IP, SERVER_PORT);
-            stream = client.GetStream();
-            Debug.Log("Connected to server");
-
-            clientIp = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Address.ToString();
-            clientPort = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Port;
-
-            //byte[] data = GameManager.instance.isMatching;
-            stream.Write(data, 0, data.Length);
-            Debug.Log(data[0]);
-            Debug.Log("Packet sent to server");
-            RecvMessage();
-            client.Close();
-
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"Failed to send packet to server: {e.Message}");
-        }
-    }
-
     void OnDestroy()
     {
         if (client != null)
@@ -180,6 +154,6 @@ public class NetWorking : MonoBehaviour
 
     public void isMatching()
     {
-
+        //SendPacket(login);
     }
 }
