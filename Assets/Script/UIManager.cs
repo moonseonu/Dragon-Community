@@ -25,7 +25,7 @@ public class UIManager : MonoBehaviour
         switch (name)
         {
             case "match":
-                GameManager.instance.isMatching = true;
+                GameManager.instance.IsMatching();
                 Debug.Log("matching");
                 break;
             case "login":

@@ -24,11 +24,20 @@ struct Packet {
 	int Port;
 };
 #pragma pack(pop)
+#pragma pack(push, 1)
+struct MatchPacket {
+	int IDSize;
+	char* ID;
+
+	int IPSize;
+	char* IP;
+};
+#pragma pack(pop)
 
 #define SERVERPORT 9000
 #define BUFSIZE    512
 
-vector<Packet> recvPackets;
+vector<MatchPacket> Packets;
 
 // 소켓 정보 저장을 위한 구조체
 struct SOCKETINFO
@@ -237,6 +246,14 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			ptr->sendbytes = 0;
 			ptr->buf[ptr->recvbytes] = '\0';
 
+			if (Packets.size() > 0)
+			{
+				printf("%s", Packets[0].ID);
+				if (Packets.size() > 2) {
+					delete[] Packets[0].ID;
+				}
+			}
+
 			Packet recvPack;
 			int offset = 0;
 
@@ -292,7 +309,16 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 					}
 
 					else {
-						printf("ismatching\n\n\n");
+						MatchPacket mp;
+						mp.IDSize = recvPack.IDSize;
+						mp.ID = new char[recvPack.IDSize + 1];
+						strcpy(mp.ID, recvPack.ID);
+
+						mp.IPSize = recvPack.IPSize;
+						mp.IP = new char[recvPack.IPSize + 1];
+						strcpy(mp.IP, recvPack.IP);
+
+						Packets.push_back(mp);
 					}
 
 					break;
@@ -304,9 +330,9 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 				}
 			}
 			mysql_free_result(res);
-			printf("fdafd");
 			delete[] recvPack.ID;
 			delete[] recvPack.PW;
+			delete[] recvPack.IP;
 		}
 		else {
 			ptr->sendbytes += cbTransferred;
