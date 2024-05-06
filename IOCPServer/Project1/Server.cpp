@@ -319,6 +319,12 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 						strcpy(mp.IP, recvPack.IP);
 
 						Packets.push_back(mp);
+						if (Packets.size() == 2)
+						{
+							bool isMatching = true;
+							memcpy(ptr->buf, &isMatching, sizeof(bool));
+
+						}
 					}
 
 					break;
@@ -327,6 +333,10 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 				else {
 					login = false;
 					memcpy(ptr->buf, &login, sizeof(bool));
+					delete[] Packets[0].ID;
+					delete[] Packets[1].ID;
+					delete[] Packets[0].IP;
+					delete[] Packets[1].IP;
 				}
 			}
 			mysql_free_result(res);
