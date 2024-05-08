@@ -113,17 +113,48 @@ public class NetWorking : MonoBehaviour
     {
         try
         {
-            byte[] data = new byte[sizeof(bool)];
-            int dataLength = stream.Read(data, 0, data.Length);
-            Debug.Log(stream);
-            if (dataLength == sizeof(bool))
+            if (!islogin)
             {
-                islogin = BitConverter.ToBoolean(data, 0);
-                Debug.Log(islogin);
-                if (islogin)
+                byte[] data = new byte[sizeof(bool)];
+                int dataLength = stream.Read(data, 0, data.Length);
+                Debug.Log(dataLength);
+                if (dataLength == sizeof(bool))
                 {
-                    GameManager.instance.isLogin = true;
+                    islogin = BitConverter.ToBoolean(data, 0);
+                    Debug.Log(islogin);
+                    if (islogin)
+                    {
+                        GameManager.instance.isLogin = true;
+                    }
                 }
+            }
+
+            else
+            {
+                byte[] data = new byte[512];
+                int dataLength = stream.Read(data, 0, data.Length);
+                Debug.Log(dataLength);
+                int offset = 0;
+
+                // IDSize 언패킹
+                int idSize = BitConverter.ToInt32(data, offset);
+                offset += sizeof(int);
+
+                // ID 언패킹
+                string id = Encoding.UTF8.GetString(data, offset, idSize);
+                offset += idSize;
+
+                // IPSize 언패킹
+                int ipSize = BitConverter.ToInt32(data, offset);
+                offset += sizeof(int);
+
+                // IP 언패킹
+                string ip = Encoding.UTF8.GetString(data, offset, ipSize);
+                offset += ipSize;
+
+                // 언패킹된 데이터 사용하기
+                Debug.Log("Unpacked ID: " + id);
+                Debug.Log("Unpacked IP: " + ip);
             }
 
         }

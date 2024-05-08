@@ -246,14 +246,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			ptr->sendbytes = 0;
 			ptr->buf[ptr->recvbytes] = '\0';
 
-			if (Packets.size() > 0)
-			{
-				printf("%s", Packets[0].ID);
-				if (Packets.size() > 2) {
-					delete[] Packets[0].ID;
-				}
-			}
-
 			Packet recvPack;
 			int offset = 0;
 
@@ -295,9 +287,10 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			while ((row = mysql_fetch_row(res)) != NULL)
 			{
 				if ((strcmp(row[1], recvPack.ID) == 0) && (strcmp(row[2], recvPack.PW) == 0)) {
-					login = true;
-					memcpy(ptr->buf, &login, sizeof(bool));
+					printf("%d mooonmoonmoon\n", atoi(row[3]));
 					if (strcmp(row[3], "0") == 0) {
+						login = true;
+						memcpy(ptr->buf, &login, sizeof(bool));
 						mysql_free_result(res);
 						char update_query[1000];
 						sprintf(update_query, "update login set Online = true where ID = '%s'", recvPack.ID);
@@ -305,7 +298,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 							printf("MySQL query failed: %s\n", mysql_error(conn));
 							return 1;
 						}
-						printf("fdfadfs");
 					}
 
 					else {
@@ -319,11 +311,41 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 						strcpy(mp.IP, recvPack.IP);
 
 						Packets.push_back(mp);
-						if (Packets.size() == 2)
+						if (Packets.size() == 1)
 						{
-							bool isMatching = true;
-							memcpy(ptr->buf, &isMatching, sizeof(bool));
+							int offset = 0;
+							memcpy(ptr->buf + offset, &Packets[0].IDSize, sizeof(int));
+							offset += sizeof(int);
+							memcpy(ptr->buf + offset, Packets[0].ID, Packets[0].IDSize);
+							offset += Packets[0].IDSize;
+							memcpy(ptr->buf + offset, &Packets[0].IPSize, sizeof(int));
+							offset += sizeof(int);
+							memcpy(ptr->buf + offset, Packets[0].IP, Packets[0].IPSize);
+							offset += Packets[0].IPSize;
 
+							printf("%d\n", offset);
+							delete[] Packets[0].ID;
+							delete[] Packets[0].IP;
+
+							//for (int i = 0; i < Packets.size(); i++) {
+							//	if (strcmp(Packets[i].ID, mp.ID) != 0) {
+							//		printf("%s", Packets[i].ID);
+							//		memcpy(ptr->buf + offset, &Packets[i].IDSize, sizeof(int));
+							//		offset += sizeof(int);
+							//		memcpy(ptr->buf + offset, Packets[i].ID, Packets[i].IDSize);
+							//		offset += Packets[i].IDSize;
+							//		memcpy(ptr->buf + offset, &Packets[i].IPSize, sizeof(int));
+							//		offset += sizeof(int);
+							//		memcpy(ptr->buf + offset, Packets[i].IP, Packets[i].IPSize);
+							//		offset += Packets[i].IPSize;
+
+							//		printf("%d\n", offset);
+							//	}
+							//	delete[] Packets[i].ID;
+							//	delete[] Packets[i].IP;
+							//}
+
+							Packets.clear();
 						}
 					}
 
@@ -333,16 +355,12 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 				else {
 					login = false;
 					memcpy(ptr->buf, &login, sizeof(bool));
-					delete[] Packets[0].ID;
-					delete[] Packets[1].ID;
-					delete[] Packets[0].IP;
-					delete[] Packets[1].IP;
 				}
 			}
-			mysql_free_result(res);
+
 			delete[] recvPack.ID;
-			delete[] recvPack.PW;
 			delete[] recvPack.IP;
+			delete[] recvPack.PW;
 		}
 		else {
 			ptr->sendbytes += cbTransferred;
