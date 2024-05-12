@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
@@ -8,15 +10,18 @@ public class NetWorking : MonoBehaviour
 {
     private const string SERVER_IP = "127.0.0.1"; // 서버 IP 주소
     private const int SERVER_PORT = 9000;         // 서버 포트 번호
-
-    private TcpClient client;
+    private const int UDPPORT = 12345;
+    private TcpClient Tclient;
+    private UdpClient Uclient;
     private NetworkStream stream;
     private bool isSend = false;
 
     private string clientIp;
     private int clientPort;
     private bool islogin;
+    private bool ismatching;
     public bool Islogin { get { return islogin; } }
+    public bool Ismatching {  get { return ismatching; } }
     public class LoginPacket
     {
         public string ID;
@@ -53,8 +58,15 @@ public class NetWorking : MonoBehaviour
             return data;
         }
     }
-    LoginPacket login = new LoginPacket();
+    public LoginPacket login = new LoginPacket();
     
+    public class PlayerInfo
+    {
+        public string ID;
+        public string IP;
+    }
+
+    public List<PlayerInfo> PlayerInfos = new List<PlayerInfo>();
 
     void Start()
     {
@@ -70,12 +82,10 @@ public class NetWorking : MonoBehaviour
     {
         try
         {
-            client = new TcpClient(SERVER_IP, SERVER_PORT);
-            stream = client.GetStream();
-            Debug.Log("Connected to server");
+            Tclient = new TcpClient(SERVER_IP, SERVER_PORT);
 
-            clientIp = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Address.ToString();
-            clientPort = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Port;
+            clientIp = ((System.Net.IPEndPoint)Tclient.Client.LocalEndPoint).Address.ToString();
+            clientPort = ((System.Net.IPEndPoint)Tclient.Client.LocalEndPoint).Port;
         }
         catch (Exception e)
         {
@@ -83,16 +93,40 @@ public class NetWorking : MonoBehaviour
         }
     }
 
+    void ConnectToClient()
+    {
+        try
+        {
+            Uclient = new UdpClient(SERVER_IP, SERVER_PORT);
+            IPAddress serverAddress = IPAddress.Parse(SERVER_IP);
+            IPEndPoint endPoint = new IPEndPoint(serverAddress, SERVER_PORT);
+            Debug.Log("FDAfd");
+            // 연결된 서버로 메시지 보내기 (예: "Hello, server!")
+            string message = "Hello, server!";
+            byte[] data = Encoding.UTF8.GetBytes(message);
+            Uclient.Send(data, data.Length, endPoint);
+
+            byte[] receivedData = Uclient.Receive(ref endPoint);
+            string response = Encoding.UTF8.GetString(receivedData);
+            Debug.Log("Received from server: " + response);
+
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to connect to client: {e.Message}");
+        }
+    }
+
     void SendPacket(LoginPacket packet)
     {
         try
         {
-            client = new TcpClient(SERVER_IP, SERVER_PORT);
-            stream = client.GetStream();
+            Tclient = new TcpClient(SERVER_IP, SERVER_PORT);
+            stream = Tclient.GetStream();
             Debug.Log("Connected to server");
 
-            clientIp = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Address.ToString();
-            clientPort = ((System.Net.IPEndPoint)client.Client.LocalEndPoint).Port;
+            clientIp = ((System.Net.IPEndPoint)Tclient.Client.LocalEndPoint).Address.ToString();
+            clientPort = ((System.Net.IPEndPoint)Tclient.Client.LocalEndPoint).Port;
 
             packet.IP = clientIp;
             packet.Port = clientPort;
@@ -100,7 +134,7 @@ public class NetWorking : MonoBehaviour
             stream.Write(data, 0, data.Length);
             Debug.Log("Packet sent to server");
             RecvMessage();
-            client.Close();
+            Tclient.Close();
 
         }
         catch (Exception e)
@@ -134,6 +168,9 @@ public class NetWorking : MonoBehaviour
                 byte[] data = new byte[512];
                 int dataLength = stream.Read(data, 0, data.Length);
                 Debug.Log(dataLength);
+
+                PlayerInfo info = new PlayerInfo();
+
                 int offset = 0;
 
                 // IDSize 언패킹
@@ -141,7 +178,7 @@ public class NetWorking : MonoBehaviour
                 offset += sizeof(int);
 
                 // ID 언패킹
-                string id = Encoding.UTF8.GetString(data, offset, idSize);
+                info.ID = Encoding.UTF8.GetString(data, offset, idSize);
                 offset += idSize;
 
                 // IPSize 언패킹
@@ -149,12 +186,12 @@ public class NetWorking : MonoBehaviour
                 offset += sizeof(int);
 
                 // IP 언패킹
-                string ip = Encoding.UTF8.GetString(data, offset, ipSize);
+                info.IP = Encoding.UTF8.GetString(data, offset, ipSize);
                 offset += ipSize;
 
-                // 언패킹된 데이터 사용하기
-                Debug.Log("Unpacked ID: " + id);
-                Debug.Log("Unpacked IP: " + ip);
+                PlayerInfos.Add(info);
+                ismatching = true;
+                ConnectToClient();
             }
 
         }
@@ -167,10 +204,16 @@ public class NetWorking : MonoBehaviour
 
     void OnDestroy()
     {
-        if (client != null)
+        if (Tclient != null)
         {
-            client.Close();
+            Tclient.Close();
             Debug.Log("Disconnected from server");
+        }
+
+        if(Uclient != null)
+        {
+            Uclient.Close();
+            Debug.Log("Disconnected from client");
         }
     }
 

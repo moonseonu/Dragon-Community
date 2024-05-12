@@ -314,36 +314,22 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 						if (Packets.size() == 1)
 						{
 							int offset = 0;
-							memcpy(ptr->buf + offset, &Packets[0].IDSize, sizeof(int));
-							offset += sizeof(int);
-							memcpy(ptr->buf + offset, Packets[0].ID, Packets[0].IDSize);
-							offset += Packets[0].IDSize;
-							memcpy(ptr->buf + offset, &Packets[0].IPSize, sizeof(int));
-							offset += sizeof(int);
-							memcpy(ptr->buf + offset, Packets[0].IP, Packets[0].IPSize);
-							offset += Packets[0].IPSize;
 
-							printf("%d\n", offset);
-							delete[] Packets[0].ID;
-							delete[] Packets[0].IP;
-
-							//for (int i = 0; i < Packets.size(); i++) {
-							//	if (strcmp(Packets[i].ID, mp.ID) != 0) {
-							//		printf("%s", Packets[i].ID);
-							//		memcpy(ptr->buf + offset, &Packets[i].IDSize, sizeof(int));
-							//		offset += sizeof(int);
-							//		memcpy(ptr->buf + offset, Packets[i].ID, Packets[i].IDSize);
-							//		offset += Packets[i].IDSize;
-							//		memcpy(ptr->buf + offset, &Packets[i].IPSize, sizeof(int));
-							//		offset += sizeof(int);
-							//		memcpy(ptr->buf + offset, Packets[i].IP, Packets[i].IPSize);
-							//		offset += Packets[i].IPSize;
-
-							//		printf("%d\n", offset);
-							//	}
-							//	delete[] Packets[i].ID;
-							//	delete[] Packets[i].IP;
-							//}
+							for (int i = 0; i < Packets.size(); i++) {
+								if (strcmp(Packets[i].ID, mp.ID) != 0) {
+									printf("%s", Packets[i].ID);
+									memcpy(ptr->buf + offset, &Packets[i].IDSize, sizeof(int));
+									offset += sizeof(int);
+									memcpy(ptr->buf + offset, Packets[i].ID, Packets[i].IDSize);
+									offset += Packets[i].IDSize;
+									memcpy(ptr->buf + offset, &Packets[i].IPSize, sizeof(int));
+									offset += sizeof(int);
+									memcpy(ptr->buf + offset, Packets[i].IP, Packets[i].IPSize);
+									offset += Packets[i].IPSize;
+								}
+								delete[] Packets[i].ID;
+								delete[] Packets[i].IP;
+							}
 
 							Packets.clear();
 						}
