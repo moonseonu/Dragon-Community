@@ -23,10 +23,13 @@ public class UIManager : MonoBehaviour
         
     }
 
-    public void init(string player)
+    public void init(string player1, string player2)
     {
-        P1_ID.text = player;
-        GameManager.instance.Update_UI(P2_ID);
+        P1_ID = GameObject.Find("UI").transform.Find("P1").transform.Find("Name").GetComponent<TMP_Text>();
+        P1_ID.text = player1;
+
+        P2_ID = GameObject.Find("UI").transform.Find("P2").transform.Find("Name").GetComponent<TMP_Text>();
+        P2_ID.text = player2;
     }
 
     public void ButtonEvent(string name)
@@ -35,7 +38,6 @@ public class UIManager : MonoBehaviour
         {
             case "match":
                 GameManager.instance.IsMatching();
-                Debug.Log("matching");
                 break;
             case "login":
                 GameManager.instance.IsLoginData(ID.text, PW.text);

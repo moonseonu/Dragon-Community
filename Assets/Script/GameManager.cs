@@ -67,7 +67,7 @@ public class GameManager : MonoBehaviour
                 }
                 break;
             case GameState.playtable:
-                ui.init(networking.login.ID);
+                ui.init(networking.login.ID, networking.PlayerInfos[0].ID);
                 break;
         }
 
@@ -81,10 +81,5 @@ public class GameManager : MonoBehaviour
     public void IsMatching()
     {
         networking.isMatching();
-    }
-
-    public void Update_UI(TMP_Text p1)
-    {
-        p1.text = networking.PlayerInfos[0].ID.ToString();
     }
 }

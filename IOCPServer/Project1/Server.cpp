@@ -26,6 +26,8 @@ struct Packet {
 #pragma pack(pop)
 #pragma pack(push, 1)
 struct MatchPacket {
+	int header;
+
 	int IDSize;
 	char* ID;
 
@@ -245,7 +247,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			ptr->recvbytes = cbTransferred;
 			ptr->sendbytes = 0;
 			ptr->buf[ptr->recvbytes] = '\0';
-
 			Packet recvPack;
 			int offset = 0;
 
@@ -287,7 +288,6 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 			while ((row = mysql_fetch_row(res)) != NULL)
 			{
 				if ((strcmp(row[1], recvPack.ID) == 0) && (strcmp(row[2], recvPack.PW) == 0)) {
-					printf("%d mooonmoonmoon\n", atoi(row[3]));
 					if (strcmp(row[3], "0") == 0) {
 						login = true;
 						memcpy(ptr->buf, &login, sizeof(bool));
@@ -309,30 +309,43 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 						mp.IPSize = recvPack.IPSize;
 						mp.IP = new char[recvPack.IPSize + 1];
 						strcpy(mp.IP, recvPack.IP);
-
 						Packets.push_back(mp);
-						if (Packets.size() == 1)
+						if (Packets.size() == 2)
 						{
 							int offset = 0;
-
-							for (int i = 0; i < Packets.size(); i++) {
-								if (strcmp(Packets[i].ID, mp.ID) != 0) {
-									printf("%s", Packets[i].ID);
-									memcpy(ptr->buf + offset, &Packets[i].IDSize, sizeof(int));
-									offset += sizeof(int);
-									memcpy(ptr->buf + offset, Packets[i].ID, Packets[i].IDSize);
-									offset += Packets[i].IDSize;
-									memcpy(ptr->buf + offset, &Packets[i].IPSize, sizeof(int));
-									offset += sizeof(int);
-									memcpy(ptr->buf + offset, Packets[i].IP, Packets[i].IPSize);
-									offset += Packets[i].IPSize;
-								}
-								delete[] Packets[i].ID;
-								delete[] Packets[i].IP;
-							}
-
+							//for (int i = 0; i < Packets.size(); i++) {
+							//	if (strcmp(Packets[i].ID, mp.ID) == 0) {
+							//		Packets[i].header = 1;
+							//		memcpy(ptr->buf + offset, &Packets[i].header, sizeof(int));
+							//		offset += sizeof(int);
+							//		printf("%d    fdafsd \n", *((int*)ptr->buf));
+							//		memcpy(ptr->buf + offset, &Packets[i].IDSize, sizeof(int));
+							//		offset += sizeof(int);
+							//		memcpy(ptr->buf + offset, Packets[i].ID, Packets[i].IDSize);
+							//		offset += Packets[i].IDSize;
+							//		memcpy(ptr->buf + offset, &Packets[i].IPSize, sizeof(int));
+							//		offset += sizeof(int);
+							//		memcpy(ptr->buf + offset, Packets[i].IP, Packets[i].IPSize);
+							//		offset += Packets[i].IPSize;
+							//	}
+							//	delete[] Packets[i].ID;
+							//	delete[] Packets[i].IP;
+							//}
+							int header = 1;
+							memcpy(ptr->buf, &header, sizeof(int));
+							printf("%d    22222222\n", *((int*)ptr->buf));
+							delete[] Packets[0].ID;
+							delete[] Packets[0].IP;
+							delete[] Packets[1].ID;
+							delete[] Packets[1].IP;
 							Packets.clear();
 						}
+						else {
+							int header = 0;
+							memcpy(ptr->buf, &header, sizeof(int));
+							printf("%d    1111111111111\n", *((int*)ptr->buf));
+						}
+						mysql_free_result(res);
 					}
 
 					break;
@@ -354,6 +367,7 @@ DWORD WINAPI WorkerThread(LPVOID arg)
 
 		if (ptr->recvbytes > ptr->sendbytes) {
 			// 데이터 보내기
+			
 			ZeroMemory(&ptr->overlapped, sizeof(ptr->overlapped));
 			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
 			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
