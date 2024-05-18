@@ -165,7 +165,7 @@ public class NetWorking : MonoBehaviour
             await stream.WriteAsync(sdata, 0, sdata.Length);
             int st = BitConverter.ToInt32(sdata, 0);
             string ss = Encoding.UTF8.GetString(sdata, sizeof(int), 3);
-            Debug.Log("Packet sent to server");
+            Debug.Log("Packet sent to server " + ss);
 
             await RecvMessageAsync();
 
@@ -187,15 +187,17 @@ public class NetWorking : MonoBehaviour
                 return;
             }
                 
-
             if (!islogin)
             {
                 byte[] rdata = new byte[sizeof(bool)];
-                int dataLength = await stream.ReadAsync(rdata, 0, sizeof(bool));
+                int dataLength = await stream.ReadAsync(rdata, 0, rdata.Length);
+
                 Debug.Log(dataLength);
+
                 if (dataLength == sizeof(bool))
                 {
                     islogin = BitConverter.ToBoolean(rdata, 0);
+                    Debug.Log(islogin);
                     if (islogin)
                     {
                         GameManager.instance.isLogin = true;
