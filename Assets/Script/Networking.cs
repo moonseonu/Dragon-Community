@@ -25,14 +25,15 @@ public class NetWorking : MonoBehaviour
 
     public class LoginPacket
     {
+        public int header = 0;
         public string ID;
         public string PW;
         public string IP;
         public int Port;
-        public int p = 1;
 
         public byte[] Packing()
         {
+            byte[] headerBytes = BitConverter.GetBytes(header);
             byte[] IDBytes = Encoding.UTF8.GetBytes(ID);
             byte[] PWBytes = Encoding.UTF8.GetBytes(PW);
             byte[] IPBytes = Encoding.UTF8.GetBytes(IP);
@@ -45,8 +46,10 @@ public class NetWorking : MonoBehaviour
 
             int intSize = sizeof(int);
             int offset = 0;
-            byte[] data = new byte[IDBytes.Length + PWBytes.Length + IPBytes.Length + PortBytes.Length + (4 * intSize)];
+            byte[] data = new byte[IDBytes.Length + PWBytes.Length + IPBytes.Length + PortBytes.Length + (5 * intSize)];
 
+            Buffer.BlockCopy(headerBytes, 0, data, offset, intSize);
+            offset += headerBytes.Length;
             Buffer.BlockCopy(IDLengthBytes, 0, data, offset, intSize);
             offset += intSize;
             Buffer.BlockCopy(IDBytes, 0, data, offset, IDBytes.Length);
@@ -67,9 +70,44 @@ public class NetWorking : MonoBehaviour
     }
     public LoginPacket login = new LoginPacket();
 
+    public class MatchingPacket
+    {
+        public int header = 1;
+        public string ID;
+        public string IP;
+
+        public byte[] Packing()
+        {
+            byte[] headerBytes = BitConverter.GetBytes(header);
+            byte[] IDBytes = Encoding.UTF8.GetBytes(ID);
+            byte[] IPBytes = Encoding.UTF8.GetBytes(IP);
+
+            byte[] IDLengthBytes = BitConverter.GetBytes(IDBytes.Length);
+            byte[] IPLengthBytes = BitConverter.GetBytes(IPBytes.Length);
+
+            int intSize = sizeof(int);
+            int offset = 0;
+            byte[] data = new byte[IDBytes.Length + IPBytes.Length + (3 * intSize)];
+
+            Buffer.BlockCopy(headerBytes, 0, data, offset, sizeof(int));
+            offset += headerBytes.Length;
+            Buffer.BlockCopy(IDLengthBytes, 0, data, offset, intSize);
+            offset += intSize;
+            Buffer.BlockCopy(IDBytes, 0, data, offset, IDBytes.Length);
+            offset += IDBytes.Length;
+            Buffer.BlockCopy(IPLengthBytes, 0, data, offset, intSize);
+            offset += intSize;
+            Buffer.BlockCopy(IPBytes, 0, data, offset, IPBytes.Length);
+            offset += IPBytes.Length;
+
+            return data;
+        }
+    }
+
+    public MatchingPacket match = new MatchingPacket();
+
     public class PlayerInfo
     {
-        public int header;
         private int IDSize;
         private int IPSize;
         public string ID;
@@ -78,8 +116,6 @@ public class NetWorking : MonoBehaviour
         public void UnPacking(byte[] recv)
         {
             int offset = 0;
-            header = BitConverter.ToInt32(recv, offset);
-            offset += sizeof(int);
             // IDSize ¾ðÆÐÅ·
             IDSize = BitConverter.ToInt32(recv, offset);
             offset += sizeof(int);
@@ -163,13 +199,34 @@ public class NetWorking : MonoBehaviour
             packet.Port = clientPort;
             byte[] sdata = packet.Packing();
             await stream.WriteAsync(sdata, 0, sdata.Length);
-            int st = BitConverter.ToInt32(sdata, 0);
-            string ss = Encoding.UTF8.GetString(sdata, sizeof(int), 3);
-            Debug.Log("Packet sent to server " + ss);
 
             await RecvMessageAsync();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to send packet to server: {e.Message}");
+        }
+    }
 
-            //Tclient.Close();
+    async void SendPacketAsync(MatchingPacket packet)
+    {
+        try
+        {
+            if (Tclient == null || !Tclient.Connected)
+            {
+                Tclient = new TcpClient();
+                await Tclient.ConnectAsync(SERVER_IP, SERVER_PORT);
+                stream = Tclient.GetStream();
+
+                clientIp = ((IPEndPoint)Tclient.Client.LocalEndPoint).Address.ToString();
+                clientPort = ((IPEndPoint)Tclient.Client.LocalEndPoint).Port;
+            }
+
+            packet.IP = clientIp;
+            byte[] sdata = packet.Packing();
+            await stream.WriteAsync(sdata, 0, sdata.Length);
+
+            await RecvMessageAsync();
         }
         catch (Exception e)
         {
@@ -186,18 +243,15 @@ public class NetWorking : MonoBehaviour
                 Debug.Log("stream is null");
                 return;
             }
-                
+
             if (!islogin)
             {
                 byte[] rdata = new byte[sizeof(bool)];
                 int dataLength = await stream.ReadAsync(rdata, 0, rdata.Length);
 
-                Debug.Log(dataLength);
-
                 if (dataLength == sizeof(bool))
                 {
                     islogin = BitConverter.ToBoolean(rdata, 0);
-                    Debug.Log(islogin);
                     if (islogin)
                     {
                         GameManager.instance.isLogin = true;
@@ -206,21 +260,19 @@ public class NetWorking : MonoBehaviour
             }
             else
             {
-                byte[] header = new byte[sizeof(int)];
-                int dataLength = await stream.ReadAsync(header, 0, sizeof(int));
-                int Header = BitConverter.ToInt32(header, 0);
-                Debug.Log(Header);
-                PlayerInfo info = new PlayerInfo();
-
-                if (info.header != 0)
+                byte[] size = new byte[sizeof(int)];
+                int PacketLength = await stream.ReadAsync(size, 0, size.Length);
+                Debug.Log(PacketLength);
+                if (PacketLength == sizeof(int))
                 {
+                    PacketLength = BitConverter.ToInt32(size, 0);
+                    size = new byte[PacketLength];
+                    int dataLength = await stream.ReadAsync(size, 0, size.Length);
+                    Debug.Log(dataLength);
+                    PlayerInfo info = new PlayerInfo();
+                    info.UnPacking(size);
                     PlayerInfos.Add(info);
                     ismatching = true;
-                    await ConnectToClientAsync();
-                }
-                else
-                {
-                    Debug.Log("header is " + info.header);
                 }
             }
         }
@@ -254,6 +306,8 @@ public class NetWorking : MonoBehaviour
 
     public void isMatching()
     {
-        SendPacketAsync(login);
+        match.ID = login.ID;
+        match.IP = login.IP;
+        SendPacketAsync(match);
     }
 }
